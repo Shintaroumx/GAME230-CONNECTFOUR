@@ -1,23 +1,24 @@
 #include "pch.h"
 #include "AI.h"
 #include "math.h"
+#include<random>
 
 
-static int  iNFINITY = 100;   // 表示无穷的值
-static int  WIN = +iNFINITY;   // MAX的最大利益为正无穷
-static int  LOSE = -iNFINITY;   // MAX的最小得益（即MIN的最大得益）为负无穷
-static int  DOUBLE_LINK = iNFINITY / 2;   // 如果同一行、列或对角上连续有两个，赛点
-static int  INPROGRESS = 1;   // 仍可继续下（没有胜出或和局）
-static int  DRAW = 0;   // 和局
-static int WIN_STATUS[][] = {
-	  {   0, 1, 2 },
+static int iNFINITY = 100;   // 表示无穷的值
+static int WIN = +iNFINITY;   // MAX的最大利益为正无穷
+static int LOSE = -iNFINITY;   // MAX的最小得益（即MIN的最大得益）为负无穷
+static int DOUBLE_LINK = iNFINITY / 2;   // 如果同一行、列或对角上连续有两个，赛点
+static int INPROGRESS = 1;   // 仍可继续下（没有胜出或和局）
+static int DRAW = 0;   // 和局
+static int** WIN_STATUS= {
+	  { 0, 1, 2 },
 	  { 3, 4, 5 },
 	  { 6, 7, 8 },
 	  { 0, 3, 6 },
 	  { 1, 4, 7 },
 	  { 2, 5, 8 },
 	  { 0, 4, 8 },
-	  { 2, 4, 6   }
+	  { 2, 4, 6 }
 };
 /**
  * 估值函数，提供一个启发式的值，决定了游戏AI的高低
@@ -29,15 +30,15 @@ int gameState(char* board) {
 	// is game over?
 	for (int pos = 0; pos < 9; pos++) {
 		char chess = board[pos];
-		if (chess==nullptr) {
+		if (chess== '*') {
 			isFull = false;
 			break;
 		}
 	}
 	// is Max win/lose?
 	for (int* status : WIN_STATUS) {
-		char   chess = board[status[0]];
-		if (chess == empty) {
+		char chess = board[status[0]];
+		if (chess == '*') {
 			break;
 		}
 		int   i = 1;
@@ -47,11 +48,11 @@ int gameState(char* board) {
 			}
 		}
 		if (i == status.length) {
-			result = chess == x ? WIN : LOSE;
+			result = chess == 'X' ? WIN : LOSE;
 			break;
 		}
 	}
-	if (result != WIN & result != LOSE) {
+	if (result != WIN && result != LOSE) {
 		if (isFull) {
 			// is draw
 			result = DRAW;
@@ -61,15 +62,15 @@ int gameState(char* board) {
 			// finds[0]->'x', finds[1]->'o'
 			int* finds = new   int[2];
 			for (int* status : WIN_STATUS) {
-				char   chess = empty;
-				bool   hasEmpty = false;
-				int   count = 0;
+				char chess = '*';
+				bool hasEmpty = false;
+				int count = 0;
 				for (int i = 0; i < status.length; i++) {
-					if (board[status[i]] == empty) {
+					if (board[status[i]] == '*') {
 						hasEmpty = true;
 					}
 					else {
-						if (chess == empty) {
+						if (chess == '*') {
 							chess = board[status[i]];
 						}
 						if (board[status[i]] == chess) {
@@ -78,7 +79,7 @@ int gameState(char* board) {
 					}
 				}
 				if (hasEmpty && count > 1) {
-					if (chess == x) {
+					if (chess == 'X') {
 						finds[0]++;
 					}
 					else {
@@ -90,12 +91,12 @@ int gameState(char* board) {
 			if (finds[1] > 0) {
 				result = -DOUBLE_LINK;
 			}
-			else   if (finds[0] > 0) {
+			else if (finds[0] > 0) {
 				result = DOUBLE_LINK;
 			}
 		}
 	}
-	return   result;
+	return result;
 }
 
 
@@ -104,15 +105,15 @@ int gameState(char* board) {
  */
  int minimax(char* board, int   depth) {
 	int* bestMoves = new int[9];
-	int   index = 0;
+	int index = 0;
 
-	int   bestValue = -iNFINITY;
+	int bestValue = -iNFINITY;
 	for (int pos = 0; pos < 9; pos++) {
 
-		if (board[pos] == empty) {
-			board[pos] = x;
+		if (board[pos] == '*') {
+			board[pos] = 'X';
 
-			int   value = min(board, depth, -iNFINITY, +iNFINITY);
+			int value = min(board, depth, -iNFINITY, +iNFINITY);
 			if (value > bestValue) {
 				bestValue = value;
 				index = 0;
@@ -124,86 +125,85 @@ int gameState(char* board) {
 					bestMoves[index] = pos;
 				}
 
-			board[pos] = empty;
+			board[pos] = '*';
 		}
 
 	}
 
-	if (index > 1) {
-		index = (new   Random(System.currentTimeMillis()).nextInt() >>> 1) % index;
-	}
-	return   bestMoves[index];
+	/*if (index > 1) {
+		index = (new Random(System.currentTimeMillis()).nextInt() >>> 1) % index;
+	}*/
 
 }
+
 /**
  * 对于'x'，估值越大对其越有利
  */
-int   max(char* board, int   depth, int   alpha, int   beta) {
+int max(char* board, int   depth, int   alpha, int   beta) {
 
-	int   evalValue = gameState(board);
+	int evalValue = gameState(board);
 
 	bool isGameOver = (evalValue == WIN || evalValue == LOSE || evalValue == DRAW);
 	if (beta <= alpha) {
 		return   evalValue;
 	}
 	if (depth == 0 || isGameOver) {
-		return   evalValue;
+		return evalValue;
 	}
 
-	int   bestValue = -iNFINITY;
+	int bestValue = -iNFINITY;
 	for (int pos = 0; pos < 9; pos++) {
 
-		if (board[pos] == empty) {
+		if (board[pos] == '*') {
 			// try
-			board[pos] = x;
+			board[pos] ='X';
 
 			//   maximixing
 			bestValue = fmax(bestValue, min(board, depth - 1, fmax(bestValue, alpha), beta));
 
 			// reset
-			board[pos] = empty;
+			board[pos] = '*';
 		}
 
 	}
 
-	return   evalValue;
+	return bestValue;
 
 }
 
 /**
  * 对于'o'，估值越小对其越有利
  */
+int min(char* board, int   depth, int   alpha, int   beta) {
 
-int   min(char* board, int   depth, int   alpha, int   beta) {
-
-	int   evalValue = gameState(board);
+	int evalValue = gameState(board);
 
 	bool isGameOver = (evalValue == WIN || evalValue == LOSE || evalValue == DRAW);
 	if (alpha >= beta) {
-		return   evalValue;
+		return evalValue;
 	}
 	// try
 	if (depth == 0 || isGameOver || alpha >= beta) {
-		return   evalValue;
+		return evalValue;
 	}
 
-	int   bestValue = +iNFINITY;
+	int bestValue = +iNFINITY;
 	for (int pos = 0; pos < 9; pos++) {
 
-		if (board[pos] == empty) {
+		if (board[pos] == '*') {
 			// try
-			board[pos] = o;
+			board[pos] = 'O';
 
 			//   minimixing
 			bestValue = fmin(bestValue, max(board, depth - 1, alpha, fmin(bestValue, beta)));
 
 			// reset
-			board[pos] = empty;
+			board[pos] = '*';
 		}
 
 	}
 
-	return   evalValue;
+	return bestValue;
 
 }
 
