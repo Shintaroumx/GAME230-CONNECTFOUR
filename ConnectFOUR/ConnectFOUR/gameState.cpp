@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 #include "pch.h"
 #include "GameState.h"
 
@@ -106,3 +107,5 @@ GameState::GameState()
 GameState::~GameState()
 {
 }
+=======
+>>>>>>> parent of f60bc8f... Beta0.9.1
